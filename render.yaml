@@ -1,0 +1,45 @@
+services:
+  # Express Backend Web Service
+  - type: web
+    name: site-builder-api
+    env: node
+    rootDir: server
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: site-builder-db
+          property: connectionString
+      - key: PORT
+        value: 3000
+      - key: TRUSTED_ORIGINS
+        sync: false
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
+      - key: BETTER_AUTH_URL
+        sync: false
+
+  # React Frontend Static Site
+  - type: static
+    name: site-builder-frontend
+    rootDir: client
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_BASEURL
+        fromService:
+          type: web
+          name: site-builder-api
+          property: host
+
+databases:
+  # Managed PostgreSQL Database
+  - name: site-builder-db
+    databaseName: site_builder
+    user: site_builder_user
+    plan: free
